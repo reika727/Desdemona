@@ -1,3 +1,5 @@
+#ifndef _OTHELLO_H
+#define _OTHELLO_H
 #include <optional>
 #include <vector>
 namespace othello {
@@ -35,3 +37,4 @@ namespace othello {
         std::vector<coordinate> would_be_reversed(const coordinate &c, const stone &s) const;
     };
 }
+#endif
