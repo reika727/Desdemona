@@ -78,7 +78,7 @@ othello::board othello::board::get_put(const othello::board::coordinate &c, cons
 }
 std::optional<othello::stone> othello::board::operator()(std::size_t x, std::size_t y) const
 {
-    if (x < 0 || x >= 8 || y < 0 || y >= 8) throw std::out_of_range("out of range");
+    if (x >= 8 || y >= 8) throw std::out_of_range("out of range");
     return data[y][x];
 }
 std::vector<othello::board::coordinate> othello::board::would_be_reversed(const othello::board::coordinate &c, const othello::stone &s) const

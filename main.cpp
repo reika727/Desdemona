@@ -1,5 +1,11 @@
 #include "GL/glut.h"
+#include "othello.hpp"
+#include <random>
+
+#include <iostream>
+
 int mouse_x = 0, mouse_y = 0;
+othello::board b;
 void resize(int w, int h)
 {
     glViewport(0, 0, w, h);
@@ -11,7 +17,6 @@ void resize(int w, int h)
 void display()
 {
     constexpr float box_size = 2;
-    const int h = glutGet(GLUT_WINDOW_HEIGHT);
     auto draw_nth_boxs_outline = [](int n) {
         const int x = (n - 1) % 8, y = (n - 1) / 8;
         glPushMatrix();
@@ -29,14 +34,16 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glLoadIdentity();
     gluLookAt(30, 30, -30, 0, 0, 0, 0, -1, 0);
+    //gluLookAt(40, 0, -10, 0, 0, 0, 0, 0, -1);
+    //gluLookAt(0, 0, -30, 0, 0, 0, 0, -1, 0);
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
             glStencilFunc(GL_ALWAYS, y * 8 + x + 1, 0xff);
             glPushMatrix();
-            glTranslated((x - 3.5) * box_size, (y - 3.5) * box_size, 0);
-            glColor3d(0.0, 1.0, 0.0);
+            glTranslatef((x - 3.5) * box_size, (y - 3.5) * box_size, 0);
+            glColor3f(0.0, 1.0, 0.0);
             glutSolidCube(box_size);
             glPopMatrix();
         }
@@ -45,8 +52,27 @@ void display()
         glColor3d(0.0, 0.0, 0.0);
         draw_nth_boxs_outline(i);
     }
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            if (auto s = b(x, y)) {
+                glPushMatrix();
+                if (s == othello::stone::black()) {
+                    glColor3f(0, 0, 0);
+                } else if (s == othello::stone::white()) {
+                    glColor3f(1, 1, 1);
+                }
+                glTranslatef((x - 3.5) * box_size, (y - 3.5) * box_size, -box_size / 2);
+                glRotatef(-90, 1, 0, 0);
+                std::random_device seed_gen;
+                std::default_random_engine engine(seed_gen());
+                glRotatef(std::uniform_real_distribution<>(0, 360)(engine), 0, 1, 0);
+                glutSolidTeapot(0.5);
+                glPopMatrix();
+            }
+        }
+    }
     unsigned int index;
-    glReadPixels(mouse_x, h - mouse_y, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_INT, &index);
+    glReadPixels(mouse_x, glutGet(GLUT_WINDOW_HEIGHT) - mouse_y, 1, 1, GL_STENCIL_INDEX, GL_UNSIGNED_INT, &index);
     if (index != 0) {
         glColor3d(1.0, 0.0, 0.0);
         draw_nth_boxs_outline(index);
@@ -59,6 +85,17 @@ void mouse_moves(int x, int y)
     mouse_y = y;
     glutPostRedisplay();
 }
+void mouse_click(int button, int state, int x, int y)
+{
+    int index;
+    glReadPixels(mouse_x, glutGet(GLUT_WINDOW_HEIGHT) - mouse_y, 1, 1, GL_STENCIL_INDEX, GL_INT, &index);
+    if (index != 0) {
+        try{
+            b.put({(index - 1) % 8, (index - 1) / 8}, othello::stone::white());
+        }catch(...){
+        }
+    }
+}
 int main(int argc, char *argv[])
 {
     glutInit(&argc, argv);
@@ -68,6 +105,7 @@ int main(int argc, char *argv[])
     glutDisplayFunc(display);
     glutReshapeFunc(resize);
     glutPassiveMotionFunc(mouse_moves);
+    glutMouseFunc(mouse_click);
     glutMainLoop();
     return 0;
 }
