@@ -1,5 +1,5 @@
-#include "othello.hpp"
 #include "othello_algorithm.hpp"
+#include "othello.hpp"
 #include <algorithm>
 #include <limits>
 #include <stdexcept>

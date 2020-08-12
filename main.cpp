@@ -90,9 +90,9 @@ void mouse_click(int button, int state, int x, int y)
     int index;
     glReadPixels(mouse_x, glutGet(GLUT_WINDOW_HEIGHT) - mouse_y, 1, 1, GL_STENCIL_INDEX, GL_INT, &index);
     if (index != 0) {
-        try{
+        try {
             b.put({(index - 1) % 8, (index - 1) / 8}, othello::stone::white());
-        }catch(...){
+        } catch (const othello::board::operation_error &) {
         }
     }
 }

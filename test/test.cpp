@@ -33,7 +33,7 @@ int main()
             try {
                 auto c = play_best_hand(b, othello::stone::black(), reading_depth);
                 std::cout << "enemy: " << c.x + 'a' << c.y + 1 << std::endl;
-            } catch (...) {
+            } catch (const othello::board::operation_error &) {
                 enemy_passed = true;
                 std::cout << "enemy passed." << std::endl;
             }
@@ -70,7 +70,7 @@ int main()
             try {
                 auto c = play_best_hand(b, othello::stone::white(), reading_depth);
                 std::cout << "enemy: " << static_cast<char>(c.x + 'a') << c.y + 1 << std::endl;
-            } catch (...) {
+            } catch (const othello::board::operation_error &) {
                 enemy_passed = true;
                 std::cout << "enemy passed." << std::endl;
             }

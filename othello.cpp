@@ -63,7 +63,7 @@ othello::board othello::board::put(const othello::board::coordinate &c, const ot
 {
     auto wbr = would_be_reversed(c, s);
     if (wbr.empty()) {
-        throw std::runtime_error("can't put this stone here");
+        throw othello::board::operation_error("can't put this stone here");
     }
     data[c.y][c.x] = s;
     for (const auto &w : wbr) {
@@ -78,8 +78,7 @@ othello::board othello::board::get_put(const othello::board::coordinate &c, cons
 }
 std::optional<othello::stone> othello::board::operator()(std::size_t x, std::size_t y) const
 {
-    if (x >= 8 || y >= 8) throw std::out_of_range("out of range");
-    return data[y][x];
+    return data.at(y).at(x);
 }
 std::vector<othello::board::coordinate> othello::board::would_be_reversed(const othello::board::coordinate &c, const othello::stone &s) const
 {
