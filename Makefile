@@ -1,7 +1,7 @@
 CXX      := g++
 CXXFLAGS := -Wall -Wextra -MMD -MP -std=c++17
-LDFLAGS  := -lglut -lGLU -lGL
-SRC      := main.cpp othello.cpp
+LDFLAGS  := -pthread -lglut -lGLU -lGL
+SRC      := main.cpp othello.cpp othello_algorithm.cpp
 TARGET   := desdemona.out
 
 $(TARGET): $(SRC)

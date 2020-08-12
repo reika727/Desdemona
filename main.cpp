@@ -1,11 +1,33 @@
 #include "GL/glut.h"
 #include "othello.hpp"
+#include "othello_algorithm.hpp"
+#include <algorithm>
 #include <random>
+#include <thread>
 
 #include <iostream>
 
-int mouse_x = 0, mouse_y = 0;
+enum class game_turn {
+    player,
+    enemy,
+};
+game_turn turn = game_turn::player;
 othello::board b;
+int mouse_x = 0, mouse_y = 0;
+void play_enemy_async()
+{
+    std::thread p(
+        [] {
+            turn = game_turn::enemy;
+            try {
+                play_best_hand(b, othello::stone::white(), 0);
+            } catch (const othello::board::operation_error &) {
+                // cant put anywhere
+            }
+            turn = game_turn::player;
+        });
+    p.detach();
+};
 void resize(int w, int h)
 {
     glViewport(0, 0, w, h);
@@ -87,13 +109,21 @@ void mouse_moves(int x, int y)
 }
 void mouse_click(int button, int state, int x, int y)
 {
+    if (turn == game_turn::enemy) return;
     int index;
     glReadPixels(mouse_x, glutGet(GLUT_WINDOW_HEIGHT) - mouse_y, 1, 1, GL_STENCIL_INDEX, GL_INT, &index);
-    if (index != 0) {
-        try {
-            b.put({(index - 1) % 8, (index - 1) / 8}, othello::stone::white());
-        } catch (const othello::board::operation_error &) {
+    if (index == 0) return;
+    if (auto puttable = b.get_puttable_places(othello::stone::black()); !puttable.empty()) {
+        othello::board::coordinate c{(index - 1) % 8, (index - 1) / 8};
+        if (std::count(puttable.begin(), puttable.end(), c)) {
+            b.put(c, othello::stone::black());
+            play_enemy_async();
+        } else {
+            // cant put here
         }
+    } else {
+        // cant put anywhere
+        play_enemy_async();
     }
 }
 int main(int argc, char *argv[])

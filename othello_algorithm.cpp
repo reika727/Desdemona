@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
-int alpha_beta(const othello::board &b, const othello::stone &s, unsigned int depth, int alpha, int beta, int depth_now)
+int alpha_beta(const othello::board &b, const othello::stone &s, unsigned int depth, int alpha, int beta, unsigned int depth_now)
 {
     if (depth_now == depth || b.get_puttable_places(s).empty()) {
         int weight[8][8] = {
@@ -41,7 +41,7 @@ othello::board::coordinate play_best_hand(othello::board &b, const othello::ston
 {
     auto gp = b.get_puttable_places(s);
     if (gp.empty()) {
-        throw std::runtime_error("no puttable place");
+        throw othello::board::operation_error("no puttable place");
     }
     auto c = gp[0];
     auto score = std::numeric_limits<int>::min();
