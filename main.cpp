@@ -2,12 +2,10 @@
 #include "othello.hpp"
 #include "othello_algorithm.hpp"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <random>
 #include <thread>
-
-#include <iostream>
-
 enum class game_turn {
     player,
     enemy,
@@ -16,15 +14,22 @@ static game_turn turn = game_turn::player;
 static othello::board b;
 static int mouse_x = 0, mouse_y = 0;
 static bool mouse_rb_on = false;
-static float theta = 45;
-static float phi = 60;
-void play_enemy_async()
+constexpr double r = 40;
+static double theta = 3 * M_PI / 2;
+static double phi = 1.2 * M_PI / 2;
+static double pot_angle[8][8];
+static std::random_device seed_gen;
+static std::default_random_engine engine(seed_gen());
+static std::uniform_real_distribution<> dist(0, 360);
+void play_enemy_async(int delay_milliseconds = 0)
 {
     std::thread p(
-        [] {
+        [delay_milliseconds] {
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
             turn = game_turn::enemy;
             try {
-                play_best_hand(b, othello::stone::white(), 0);
+                auto c = play_best_hand(b, othello::stone::white(), 0);
+                pot_angle[c.y][c.x] = dist(engine);
             } catch (const othello::board::operation_error &) {
                 // cant put anywhere
             }
@@ -59,19 +64,17 @@ void display()
     constexpr GLfloat white_pot_diff[] = {1, 0.829, 0.829, 1.0};
     constexpr GLfloat white_pot_spec[] = {0.296648, 0.296648, 0.296648, 1.0};
     constexpr GLfloat white_pot_shine[] = {10.24};
-    constexpr double r = 50;
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glLoadIdentity();
     gluLookAt(
-        r * std::sin(phi / 180 * M_PI) * std::cos(theta / 180 * M_PI),
-        r * std::cos(phi / 180 * M_PI),
-        r * std::sin(phi / 180 * M_PI) * std::sin(theta / 180 * M_PI),
+        r * std::sin(phi /*/ 180 * M_PI*/) * std::cos(theta /*/ 180 * M_PI*/),
+        r * std::cos(phi /*/ 180 * M_PI*/),
+        r * std::sin(phi /*/ 180 * M_PI*/) * std::sin(theta /*/ 180 * M_PI*/),
         0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
     glPushMatrix();
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, board_ambi);
@@ -79,6 +82,7 @@ void display()
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, board_spec);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, board_shine);
     glTranslatef(0, -3.5 * box_size, 0);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     for (int y = 0; y < 8; ++y) {
         glTranslatef(-3.5 * box_size, 0, 0);
         for (int x = 0; x < 8; ++x) {
@@ -96,7 +100,7 @@ void display()
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, line_diff);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, line_spec);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, line_shine);
-    glTranslatef(0, -3.5 * box_size, 0);
+    glTranslatef(0, -3.5 * box_size, -0.01);
     for (int y = 0; y < 8; ++y) {
         glTranslatef(-3.5 * box_size, 0, 0);
         for (int x = 0; x < 8; ++x) {
@@ -132,9 +136,7 @@ void display()
                 }
                 glPushMatrix();
                 glRotatef(-90, 1, 0, 0);
-                std::random_device seed_gen;
-                std::default_random_engine engine(seed_gen());
-                glRotatef(std::uniform_real_distribution<>(0, 360)(engine), 0, 1, 0);
+                glRotatef(pot_angle[y][x], 0, 1, 0);
                 glutSolidTeapot(0.5);
                 glPopMatrix();
             }
@@ -166,20 +168,22 @@ void mouse_click(int button, int state, int x, int y)
         othello::board::coordinate c{(index - 1) % 8, (index - 1) / 8};
         if (std::count(puttable.begin(), puttable.end(), c)) {
             b.put(c, othello::stone::black());
-            play_enemy_async();
+            pot_angle[c.y][c.x] = dist(engine);
+            play_enemy_async(50);
         } else {
             // cant put here
         }
     } else {
         // cant put anywhere
-        play_enemy_async();
+        play_enemy_async(50);
     }
 }
 void drag_motion(int x, int y)
 {
+    constexpr float magnitude = 0.01;
     if (mouse_rb_on) {
-        theta += x - mouse_x;
-        phi = std::clamp(phi + mouse_y - y, 0.1f, 179.9f);
+        theta += (x - mouse_x) * magnitude;
+        phi = std::clamp(phi + (mouse_y - y) * magnitude, 0.001, M_PI);
         mouse_x = x;
         mouse_y = y;
     }
@@ -203,6 +207,10 @@ void lightInit(void)
 }
 int main(int argc, char *argv[])
 {
+    pot_angle[3][3] = dist(engine);
+    pot_angle[3][4] = dist(engine);
+    pot_angle[4][3] = dist(engine);
+    pot_angle[4][4] = dist(engine);
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
     glutInitWindowSize(640, 480);
