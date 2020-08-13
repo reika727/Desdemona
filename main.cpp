@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <random>
 #include <stdexcept>
@@ -13,7 +15,9 @@ enum class game_turn {
     enemy,
 };
 static game_turn turn = game_turn::player;
+static othello::stone stone_player = othello::stone::black();
 static othello::board b;
+static unsigned int level = 0;
 static constexpr double r = 40;
 static double theta = 3 * M_PI / 2;
 static double phi = 1.2 * M_PI / 2;
@@ -30,7 +34,7 @@ void play_enemy_async(int delay_milliseconds = 0)
             std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
             turn = game_turn::enemy;
             try {
-                auto c = play_best_hand(b, othello::stone::white(), 0);
+                auto c = play_best_hand(b, stone_player.get_reversed(), level);
                 pot_angle[c.y][c.x] = dist(engine);
             } catch (const othello::board::operation_error &) {
                 // cant put anywhere
@@ -165,10 +169,10 @@ void mouse_click(int button, int state, int x, int y)
     int index;
     glReadPixels(mouse_x, glutGet(GLUT_WINDOW_HEIGHT) - mouse_y, 1, 1, GL_STENCIL_INDEX, GL_INT, &index);
     if (index == 0) return;
-    if (auto puttable = b.get_puttable_places(othello::stone::black()); !puttable.empty()) {
+    if (auto puttable = b.get_puttable_places(stone_player); !puttable.empty()) {
         othello::board::coordinate c{(index - 1) % 8, (index - 1) / 8};
         if (std::count(puttable.begin(), puttable.end(), c)) {
-            b.put(c, othello::stone::black());
+            b.put(c, stone_player);
             pot_angle[c.y][c.x] = dist(engine);
             play_enemy_async(50);
         } else {
@@ -208,10 +212,22 @@ void lightInit(void)
 int main(int argc, char *argv[])
 {
     try {
+        for (int i = 1; i < argc; ++i) {
+            if (std::sscanf(argv[i], "-level=%u", &level)) {
+            } else if (!std::strcmp(argv[i], "-second")) {
+                turn = game_turn::enemy;
+                stone_player = othello::stone::white();
+            } else {
+                throw std::invalid_argument("invalid arguments.");
+            }
+        }
         pot_angle[3][3] = dist(engine);
         pot_angle[3][4] = dist(engine);
         pot_angle[4][3] = dist(engine);
         pot_angle[4][4] = dist(engine);
+        if (turn == game_turn::enemy) {
+            play_enemy_async(50);
+        }
         glutInit(&argc, argv);
         glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
         glutInitWindowSize(640, 480);
