@@ -1,3 +1,4 @@
+// 詳しくはothello_algorithm.hpp参照。
 #include "othello_algorithm.hpp"
 #include "othello.hpp"
 #include <algorithm>
