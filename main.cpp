@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <iostream>
 #include <random>
+#include <stdexcept>
 #include <thread>
 enum class game_turn {
     player,
@@ -12,15 +14,15 @@ enum class game_turn {
 };
 static game_turn turn = game_turn::player;
 static othello::board b;
-static int mouse_x = 0, mouse_y = 0;
-static bool mouse_rb_on = false;
-constexpr double r = 40;
+static constexpr double r = 40;
 static double theta = 3 * M_PI / 2;
 static double phi = 1.2 * M_PI / 2;
 static double pot_angle[8][8];
 static std::random_device seed_gen;
 static std::default_random_engine engine(seed_gen());
 static std::uniform_real_distribution<> dist(0, 360);
+static int mouse_x = 0, mouse_y = 0;
+static bool mouse_rb_on = false;
 void play_enemy_async(int delay_milliseconds = 0)
 {
     std::thread p(
@@ -42,7 +44,7 @@ void resize(int w, int h)
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(30.0, static_cast<double>(w) / h, 10.0, 100.0);
+    gluPerspective(30.0, static_cast<float>(w) / h, 10.0, 100.0);
     glMatrixMode(GL_MODELVIEW);
 }
 void display()
@@ -69,9 +71,9 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glLoadIdentity();
     gluLookAt(
-        r * std::sin(phi /*/ 180 * M_PI*/) * std::cos(theta /*/ 180 * M_PI*/),
-        r * std::cos(phi /*/ 180 * M_PI*/),
-        r * std::sin(phi /*/ 180 * M_PI*/) * std::sin(theta /*/ 180 * M_PI*/),
+        r * std::sin(phi) * std::cos(theta),
+        r * std::cos(phi),
+        r * std::sin(phi) * std::sin(theta),
         0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
@@ -146,7 +148,6 @@ void display()
         glTranslatef(0, box_size, 0);
     }
     glPopMatrix();
-
     glutSwapBuffers();
 }
 void mouse_moves(int x, int y)
@@ -202,25 +203,28 @@ void lightInit(void)
     glLightfv(GL_LIGHT0, GL_AMBIENT, light0ambi);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light0diff);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light0spec);
-    //glLightf(GL_LIGHT0, GL_SPOT_CUTOFF,  10.0 );
     glShadeModel(GL_SMOOTH);
 }
 int main(int argc, char *argv[])
 {
-    pot_angle[3][3] = dist(engine);
-    pot_angle[3][4] = dist(engine);
-    pot_angle[4][3] = dist(engine);
-    pot_angle[4][4] = dist(engine);
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
-    glutInitWindowSize(640, 480);
-    glutCreateWindow("window");
-    glutDisplayFunc(display);
-    glutReshapeFunc(resize);
-    glutPassiveMotionFunc(mouse_moves);
-    glutMotionFunc(drag_motion);
-    glutMouseFunc(mouse_click);
-    lightInit();
-    glutMainLoop();
+    try {
+        pot_angle[3][3] = dist(engine);
+        pot_angle[3][4] = dist(engine);
+        pot_angle[4][3] = dist(engine);
+        pot_angle[4][4] = dist(engine);
+        glutInit(&argc, argv);
+        glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
+        glutInitWindowSize(640, 480);
+        glutCreateWindow("window");
+        glutDisplayFunc(display);
+        glutReshapeFunc(resize);
+        glutPassiveMotionFunc(mouse_moves);
+        glutMotionFunc(drag_motion);
+        glutMouseFunc(mouse_click);
+        lightInit();
+        glutMainLoop();
+    } catch (const std::exception &e) {
+        std::cout << e.what() << std::endl;
+    }
     return 0;
 }

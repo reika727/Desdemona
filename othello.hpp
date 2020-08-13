@@ -21,12 +21,12 @@ namespace othello {
     };
     class board final {
     public:
-        struct coordinate {
+        struct coordinate final {
             int x, y;
             bool operator==(const coordinate &c) const;
             bool operator!=(const coordinate &c) const;
         };
-        class operation_error : public std::runtime_error {
+        class operation_error final : public std::runtime_error {
             using std::runtime_error::runtime_error;
         };
         board();
