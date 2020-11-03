@@ -40,7 +40,7 @@ static bool mouse_rb_on = false;
 // レベルが低いと一瞬で手が決まってしまうので、引数で指定した時間遅延させることもできる。
 void play_enemy_async(int delay_milliseconds = 0)
 {
-    std::thread p(
+    std::thread(
         [delay_milliseconds] {
             std::this_thread::sleep_for(std::chrono::milliseconds(delay_milliseconds));
             turn = game_turn::enemy;
@@ -52,8 +52,8 @@ void play_enemy_async(int delay_milliseconds = 0)
                 // 特になし
             }
             turn = game_turn::player;
-        });
-    p.detach();
+        })
+        .detach();
 };
 // 各種コールバック
 void resize(int w, int h)

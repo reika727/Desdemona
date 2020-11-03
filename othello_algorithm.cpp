@@ -44,11 +44,12 @@ othello::board::coordinate play_best_hand(othello::board &b, const othello::ston
     if (gp.empty()) {
         throw othello::board::operation_error("no puttable place");
     }
-    auto c = gp[0];
+    othello::board::coordinate c;
     auto score = std::numeric_limits<int>::min();
     for (const auto &p : gp) {
         if (auto new_score = alpha_beta(b.get_put(p, s), s, depth); new_score > score) {
             c = p;
+            score = new_score;
         }
     }
     b.put(c, s);
